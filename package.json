@@ -1,0 +1,19 @@
+{
+	"name": "async-iter-map",
+	"version": "1.0.0",
+	"description": "accept an async-iterator, map, produce an async iterator",
+	"main": "async-iter-map.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://archive.eldergods.com/async-iter-map"
+	},
+	"keywords": [],
+	"author": "jauntywunderkind",
+	"license": "MIT",
+	"module": "async-iter-map.js",
+	"esm": true,
+	"type": "module"
+}
