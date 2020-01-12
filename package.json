@@ -15,5 +15,10 @@
 	"license": "MIT",
 	"module": "async-iter-map.js",
 	"esm": true,
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"abort-controller": "^3.0.0",
+		"minimist": "^1.2.0",
+		"shim-to-polyfill": "^1.0.0"
+	}
 }

@@ -1,12 +1,12 @@
 #!/usr/bin/env
-import shimToPolyfill from "shim-to-polyfill"
-const AbortError= ShimToPolyfill( "AbortError", "abort-controller/dist/abort-controller.mjs")
+import ShimToPolyfill from "shim-to-polyfill"
+const AbortError= ShimToPolyfill( "AbortError", import("abort-controller/dist/abort-controller.mjs"))
 
 export const
 	DropItem= Symbol.for( "async-iter-map:drop-item"),
-	FlattenItem= Symbol.for( "async-iter-map:flatten-item")
+	FlattenItem= Symbol.for( "async-iter-map:flatten-item"),
 	Item= {
-		Drop: DropITem,
+		Drop: DropItem,
 		Flatten: FlattenItem
 	}
 
@@ -97,12 +97,25 @@ AsyncIterMap.prototype.return= function(){
 AsyncIterMap.prototype.throw= function(){
 	this.done= true
 }
-AsyncIterMap.prototype.abort= async function( err){
-	if( err&& (err.constructor.name=== "AbortError"|| err instanceof AbortError))
-	this.throw( new Abort
+AsyncIterMap.prototype.abort= function( err){
+	if( !err){
+		err= new AbortError()
+	}else if( !(err.constructor.name=== "AbortError"|| err instanceof AbortError)){
+		err= new AbortError( err)
+	}
+	return this.throw( err)
 }
 
 export async function main( ...opts){
-	const vo= await import( "voodoo-opt")
-	
+	const
+		gets= await import("voodoo-opt/get.js"),
+		ctx= gets({
+			args: undefined,
+			lines: undefined
+		}),
+		fn= eval( `function(item){ ${ctx.args["_"].join("")} }`),
+		mapper= AsyncIterMap( lines, fn, opts&& opts[ 0])
+	for await( const out of mapper()){
+		console.log(out)
+	}
 }
