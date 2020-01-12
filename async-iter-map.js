@@ -17,6 +17,12 @@ export function AsyncIterMap( input, map, opts){
 	}
 
 	Object.defineProperties( this, {
+		abort: {
+			value: this.abort.bind( this)
+		},
+		count: {
+			value: 0
+		},
 		_input: {
 			value: input
 		},
@@ -29,7 +35,7 @@ export function AsyncIterMap( input, map, opts){
 	})
 }
 
-AsyncIterMap.prototype.next= async function(){
+AsyncIterMap.prototype.next= async function( passed){
 	// process all flattened items first
 	QUEUED: if( this._queued){
 		const value= await this._queued.next()
@@ -54,7 +60,7 @@ AsyncIterMap.prototype.next= async function(){
 	}
 
 	// map data
-	const mapped= this._map( next.value)
+	const mapped= this._map( next.value, this.count, passed)
 
 	// drop?
 	// TODO: yo i heard you don't like recursive calls in non-tail-recursive langs but ohwell
@@ -79,12 +85,14 @@ AsyncIterMap.prototype.next= async function(){
 			throw new Error( "map was told to flatten a value but not iterable")
 		}
 		this._queued= iter
+		++this.count
 		return {
 			value: firstVal,
 			done: false
 		}
 	}
 
+	++this.count
 	return {
 		value: mapped,
 		done: false
@@ -128,7 +136,7 @@ export async function main( ...opts){
 			lines: undefined
 		})
 	const
-		fn= new Function( "item", ctx.args[ "_"].join( " ")),
+		fn= new Function( "item", "count", "passed", ctx.args[ "_"].join( " ")),
 		mapper= new AsyncIterMap( ctx.lines, fn, opts&& opts[ 0])
 	for await( const out of mapper){
 		console.log( out)
