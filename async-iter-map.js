@@ -100,11 +100,16 @@ export {
 AsyncIterMap.prototype[ Symbol.asyncIterator]= function(){
 	return this
 }
-AsyncIterMap.prototype.return= function(){
+AsyncIterMap.prototype.return= function( value){
 	this.done= true
+	return Promise.resolve({
+		done: true,
+		value
+	})
 }
-AsyncIterMap.prototype.throw= function(){
+AsyncIterMap.prototype.throw= function( err){
 	this.done= true
+	return Promise.reject( err)
 }
 AsyncIterMap.prototype.abort= function( err){
 	if( !err){
