@@ -1,6 +1,6 @@
-#!/usr/bin/env
+#!/usr/bin/env node
 import ShimToPolyfill from "shim-to-polyfill"
-const AbortError= ShimToPolyfill( "AbortError", import("abort-controller/dist/abort-controller.mjs"))
+const AbortError= ShimToPolyfill( "AbortError", import("abort-controller"))
 
 export const
 	DropItem= Symbol.for( "async-iter-map:drop-item"),
@@ -18,7 +18,7 @@ export function AsyncIterMap( input, map, opts){
 
 	Object.defineProperties( this, {
 		_input: {
-			value: _input
+			value: input
 		},
 		_map: {
 			value: map
@@ -86,10 +86,19 @@ AsyncIterMap.prototype.next= async function(){
 	}
 
 	return {
-		value: mapped.value,
+		value: mapped,
 		done: false
 	}
 	
+}
+export {
+	AsyncIterMap as default,
+	AsyncIterMap as asyncIterMap,
+	AsyncIterMap as map,
+	AsyncIterMap as Map
+}
+AsyncIterMap.prototype[ Symbol.asyncIterator]= function(){
+	return this
 }
 AsyncIterMap.prototype.return= function(){
 	this.done= true
@@ -108,14 +117,18 @@ AsyncIterMap.prototype.abort= function( err){
 
 export async function main( ...opts){
 	const
-		gets= await import("voodoo-opt/get.js"),
-		ctx= gets({
+		gets= (await import("voodoo-opt/opt.js")).gets,
+		ctx= await gets({
 			args: undefined,
 			lines: undefined
-		}),
-		fn= eval( `function(item){ ${ctx.args["_"].join("")} }`),
-		mapper= AsyncIterMap( lines, fn, opts&& opts[ 0])
-	for await( const out of mapper()){
-		console.log(out)
+		})
+	const
+		fn= new Function( "item", ctx.args[ "_"].join( " ")),
+		mapper= new AsyncIterMap( ctx.lines, fn, opts&& opts[ 0])
+	for await( const out of mapper){
+		console.log( out)
 	}
+}
+if( typeof process!== "undefined"&& `file://${ process.argv[ 1]}`&& process.argv[ 1]){
+	main()
 }

@@ -18,7 +18,9 @@
 	"type": "module",
 	"dependencies": {
 		"abort-controller": "^3.0.0",
+		"async-iter-split": "^1.0.0",
 		"minimist": "^1.2.0",
-		"shim-to-polyfill": "^1.0.0"
+		"shim-to-polyfill": "^1.0.0",
+		"voodoo-opt": "^1.0.1"
 	}
 }
