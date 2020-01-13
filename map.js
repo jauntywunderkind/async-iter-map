@@ -78,7 +78,7 @@ AsyncIterMap.prototype.next= async function( passed){
 	}
 
 	// flatten
-	if( mapped.value&& mapped.value[ FlattenItem]){
+	if( mapped&& mapped[ FlattenItem]){
 		let
 			iter,
 			firstVal
@@ -142,8 +142,7 @@ export async function main( ...opts){
 		ctx= await gets({
 			args: undefined,
 			lines: undefined
-		})
-	const
+		}),
 		fn= new Function( "item", "count", "passed", "symbol", ctx.args[ "_"].join( " ")),
 		mapper= new AsyncIterMap( ctx.lines, fn, opts&& opts[ 0])
 	for await( const out of mapper){
