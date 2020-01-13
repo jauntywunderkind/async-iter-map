@@ -5,10 +5,13 @@ const AbortError= ShimToPolyfill( "AbortError", import("abort-controller"))
 export const
 	DropItem= Symbol.for( "async-iter-map:drop-item"),
 	FlattenItem= Symbol.for( "async-iter-map:flatten-item"),
-	Item= {
+	symbol= {
 		Drop: DropItem,
 		Flatten: FlattenItem
 	}
+export {
+	symbol as Symbol
+}
 
 export function AsyncIterMap( input, map, opts){
 	this.abort= this.abort.bind( this)
@@ -66,7 +69,7 @@ AsyncIterMap.prototype.next= async function( passed){
 	}
 
 	// map data
-	const mapped= this._map( next.value, this.count, passed)
+	const mapped= this._map( next.value, this.count, passed, Symbol)
 
 	// drop?
 	// TODO: yo i heard you don't like recursive calls in non-tail-recursive langs but ohwell
@@ -142,7 +145,7 @@ export async function main( ...opts){
 			lines: undefined
 		})
 	const
-		fn= new Function( "item", "count", "passed", ctx.args[ "_"].join( " ")),
+		fn= new Function( "item", "count", "passed", "symbol", ctx.args[ "_"].join( " ")),
 		mapper= new AsyncIterMap( ctx.lines, fn, opts&& opts[ 0])
 	for await( const out of mapper){
 		console.log( out)
