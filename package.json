@@ -2,7 +2,7 @@
 	"name": "async-iter-map",
 	"version": "1.0.0",
 	"description": "map/reduce/flatten an input asynchronous iterator",
-	"main": "async-iter-map.js",
+	"main": "map.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
@@ -13,7 +13,7 @@
 	"keywords": [],
 	"author": "jauntywunderkind",
 	"license": "MIT",
-	"module": "async-iter-map.js",
+	"module": "map.js",
 	"esm": true,
 	"type": "module",
 	"dependencies": {
