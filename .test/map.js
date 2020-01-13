@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import tape from "tape"
 import Map from "../map.js"
 import Fixture012 from "./_fixture_012.js"
