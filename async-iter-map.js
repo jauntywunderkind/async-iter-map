@@ -18,19 +18,24 @@ export function AsyncIterMap( input, map, opts){
 
 	Object.defineProperties( this, {
 		abort: {
-			value: this.abort.bind( this)
+			value: this.abort.bind( this),
+			writable: true
 		},
 		count: {
-			value: 0
+			value: 0,
+			writable: true
 		},
 		_input: {
-			value: input
+			value: input,
+			writable: true
 		},
 		_map: {
-			value: map
+			value: map,
+			writable: true
 		},
 		_queued: { // iterator for any pending, flattened results
-			value: null
+			value: null,
+			writable: true
 		}
 	})
 }
@@ -40,6 +45,7 @@ AsyncIterMap.prototype.next= async function( passed){
 	QUEUED: if( this._queued){
 		const value= await this._queued.next()
 		if( value.done){
+			this._queued= null
 			break QUEUED
 		}
 		return {
