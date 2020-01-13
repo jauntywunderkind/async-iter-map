@@ -27,11 +27,11 @@ export function AsyncIterMap( input, map, opts){
 			value: 0,
 			writable: true
 		},
-		_input: {
+		input: {
 			value: input,
 			writable: true
 		},
-		_map: {
+		map: {
 			value: map,
 			writable: true
 		},
@@ -40,6 +40,7 @@ export function AsyncIterMap( input, map, opts){
 			writable: true
 		}
 	})
+	return this
 }
 
 AsyncIterMap.prototype.next= async function( passed){
@@ -57,7 +58,7 @@ AsyncIterMap.prototype.next= async function( passed){
 	}
 
 	// get next item
-	const next= await this._input.next()
+	const next= await this.input.next()
 	if( next.done){
 		// no more input data
 		this._done()
@@ -68,7 +69,7 @@ AsyncIterMap.prototype.next= async function( passed){
 	}
 
 	// map data
-	const mapped= this._map( next.value, this.count, passed, Symbol)
+	const mapped= this.map( next.value, this.count, passed, Symbol)
 
 	// drop?
 	// TODO: yo i heard you don't like recursive calls in non-tail-recursive langs but ohwell
@@ -138,7 +139,7 @@ AsyncIterMap.prototype.abort= function( err){
 AsyncIterMap.prototype._done= function(){
 	this.done= true
 	if( this.cleanup!== false){
-		this._input= null
+		this.input= null
 	}
 }
 
@@ -149,6 +150,7 @@ export async function main( ...opts){
 			args: undefined,
 			lines: undefined
 		}),
+		// take the extended arguments & turn them into a mapper function, that has these variables
 		fn= new Function( "item", "count", "passed", "symbol", ctx.args[ "_"].join( " ")),
 		mapper= new AsyncIterMap( ctx.lines, fn, opts&& opts[ 0])
 	for await( const out of mapper){
