@@ -60,7 +60,7 @@ AsyncIterMap.prototype.next= async function( passed){
 	const next= await this._input.next()
 	if( next.done){
 		// no more input data
-		this.done= true
+		this._done()
 		return {
 			value: undefined,
 			done: true
@@ -117,14 +117,14 @@ AsyncIterMap.prototype[ Symbol.asyncIterator]= function(){
 	return this
 }
 AsyncIterMap.prototype.return= function( value){
-	this.done= true
+	this._done()
 	return Promise.resolve({
 		done: true,
 		value
 	})
 }
 AsyncIterMap.prototype.throw= function( err){
-	this.done= true
+	this._done()
 	return Promise.reject( err)
 }
 AsyncIterMap.prototype.abort= function( err){
@@ -134,6 +134,12 @@ AsyncIterMap.prototype.abort= function( err){
 		err= new AbortError( err)
 	}
 	return this.throw( err)
+}
+AsyncIterMap.prototype._done= function(){
+	this.done= true
+	if( this.cleanup!== false){
+		this._input= null
+	}
 }
 
 export async function main( ...opts){
