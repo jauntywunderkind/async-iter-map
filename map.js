@@ -149,6 +149,6 @@ export async function main( ...opts){
 		console.log( out)
 	}
 }
-if( typeof process!== "undefined"&& `file://${ process.argv[ 1]}`&& process.argv[ 1]){
+if( typeof process!== "undefined"&& `file://${ process.argv[ 1]}`== process.argv[ 1]){
 	main()
 }
