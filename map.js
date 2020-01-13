@@ -14,7 +14,6 @@ export {
 }
 
 export function AsyncIterMap( input, map, opts){
-	this.abort= this.abort.bind( this)
 	if( opts&& opts.signal){
 		opts.signal.addEventListener( "abort", this.abort)
 	}
