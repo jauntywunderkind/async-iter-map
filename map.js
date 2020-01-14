@@ -13,18 +13,14 @@ export {
 	symbol as Symbol
 }
 
-export function AsyncIterMap( input, map, opts){
-	if( opts&& opts.signal){
-		opts.signal.addEventListener( "abort", this.abort)
-	}
-
+export function AsyncIterMap({ input, map, count= 0, signal }){
 	Object.defineProperties( this, {
 		abort: {
 			value: this.abort.bind( this),
 			writable: true
 		},
 		count: {
-			value: 0,
+			value: count,
 			writable: true
 		},
 		input: {
@@ -35,11 +31,19 @@ export function AsyncIterMap( input, map, opts){
 			value: map,
 			writable: true
 		},
+		_pending: {
+			value: null,
+			writable: true
+		},
 		_queued: { // iterator for any pending, flattened results
 			value: null,
 			writable: true
 		}
 	})
+
+	if( signal){
+		signal.addEventListener( "abort", this.abort)
+	}
 	return this
 }
 
@@ -58,6 +62,7 @@ AsyncIterMap.prototype.next= async function( passed){
 	}
 
 	// get next item
+	// TODO: some of me wants to make input, if swapped, to hot-update this next
 	const next= await this.input.next()
 	if( next.done){
 		// no more input data
@@ -150,9 +155,14 @@ export async function main( ...opts){
 			args: undefined,
 			lines: undefined
 		}),
-		// take the extended arguments & turn them into a mapper function, that has these variables
-		fn= new Function( "item", "count", "passed", "symbol", ctx.args[ "_"].join( " ")),
-		mapper= new AsyncIterMap( ctx.lines, fn, opts&& opts[ 0])
+		// take the process's extended arguments & turn them into a mapper function, that has these variables
+		map= new Function( "item", "count", "passed", "symbol", ctx.args[ "_"].join( " ")),
+		// run stdin lines through map
+		mapper= new AsyncIterMap({
+			input: ctx.lines,
+			map
+		})
+	// read out the mapped stream
 	for await( const out of mapper){
 		console.log( out)
 	}

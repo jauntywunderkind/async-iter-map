@@ -6,11 +6,13 @@ import Fixture012 from "./_fixture_012.js"
 tape( "map", async function( t){
 	t.plan( 5)
 	let agg= 0
+	function mapper( n){
+		agg+= n
+		return n
+	}
 	const
-		map= new Map( Fixture012(), function( n){
-			agg+= n
-			return n
-		}),
+		input= Fixture012(),
+		map= new Map({ input, map: mapper}),
 		v0= await map.next()
 	t.equal( v0.value, 0, "value=0")
 	const v1= await map.next()
@@ -24,16 +26,20 @@ tape( "map", async function( t){
 
 tape( "map for-await loop", async function( t){
 	t.plan( 5)
-	let agg= 0
-	const map= new Map( Fixture012(), function( n){
+	let
+		agg= 0, // aggregated
+		count= 0 // loop counter
+	function mapper( n){
 		agg+= n
 		return n
-	})
-	let cur= 0
-	for await( let n of map){
-		t.equal( n, cur, `value=${cur}`)
-		++cur
 	}
-	t.equal( cur, 3, "currrent cursor")
+	const
+		input= Fixture012(),
+		map= new Map({ input, map: mapper})
+	for await( let n of map){
+		t.equal( n, count, `value=${count}`)
+		++count
+	}
+	t.equal( count, 3, "loop count")
 	t.equal( agg, 3, "aggregator")
 })
