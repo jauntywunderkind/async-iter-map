@@ -1,6 +1,6 @@
 {
 	"name": "async-iter-map",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "map/reduce/flatten an input asynchronous iterator",
 	"main": "map.js",
 	"scripts": {
