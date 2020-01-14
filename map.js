@@ -13,26 +13,22 @@ export {
 	symbol as Symbol
 }
 
-export function AsyncIterMap({ input, map, count= 0, signal }){
+export function AsyncIterMap({ input, map, count= 0, signal }= {}){
 	Object.defineProperties( this, {
 		abort: {
 			value: this.abort.bind( this),
 			writable: true
 		},
 		count: {
-			value: count,
+			value: count|| this.count,
 			writable: true
 		},
 		input: {
-			value: input,
+			value: input|| this.input,
 			writable: true
 		},
 		map: {
-			value: map,
-			writable: true
-		},
-		_pending: {
-			value: null,
+			value: map|| this.map,
 			writable: true
 		},
 		_queued: { // iterator for any pending, flattened results
