@@ -115,6 +115,13 @@ export {
 	AsyncIterMap as map,
 	AsyncIterMap as Map
 }
+Object.defineProperties( AsyncIterMap, {
+	Symbol: {
+		get: function(){
+			return symbol
+		}
+	}
+})
 AsyncIterMap.prototype[ Symbol.asyncIterator]= function(){
 	return this
 }
