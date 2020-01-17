@@ -6,8 +6,8 @@ export const
 	DropItem= Symbol.for( "async-iter-map:drop-item"),
 	FlattenItem= Symbol.for( "async-iter-map:flatten-item"),
 	symbol= {
-		Drop: DropItem,
-		Flatten: FlattenItem
+		DropItem,
+		FlattenItem
 	}
 export {
 	symbol as Symbol
