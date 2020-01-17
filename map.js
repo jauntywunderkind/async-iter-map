@@ -23,12 +23,12 @@ export function AsyncIterMap({ input, map, count, signal }= {}){
 			value: (count!== undefined? count: this.count)|| 0,
 			writable: true
 		},
-		...( input&&{ input: {
-			value: input|| this.input,
+		...( !this.input&&{ input: {
+			value: input,
 			writable: true
 		}}),
-		...( map&&{ map: {
-			value: map|| this.map,
+		...( !this.map&&{ map: {
+			value: map,
 			writable: true
 		}}),
 		_queued: { // iterator for any pending, flattened results
