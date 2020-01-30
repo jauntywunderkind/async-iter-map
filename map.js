@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import Defer from "p-defer"
 import ShimToPolyfill from "shim-to-polyfill"
 const AbortError= ShimToPolyfill( "AbortError", import("abort-controller"))
 
@@ -39,6 +40,10 @@ export function AsyncIterMap({ cleanup, closeInput, count, input, map, signal}= 
 			value: map,
 			writable: true
 		}}),
+		_nexting: {
+			value: false,
+			writable: true
+		},
 		_queued: { // iterator for any pending, flattened results
 			value: null,
 			writable: true
@@ -59,10 +64,24 @@ function notDrop( item){
 
 // HAZARD: calling .next() while another .next() is running is very race-y
 AsyncIterMap.prototype.next= async function( passed){
+	// wait for whomever is running .next() to finish
+	if( this._nexting){
+		if( this._nexting=== true){
+			this._nexting= Defer()
+		}
+		await this._nexting.promise
+	}
+	// early terminate
+	if( this.done){
+		return {
+			done: true,
+			value: undefined
+		}
+	}
 	// process all flattened items first
 	QUEUED: if( this._queued){
-		const value= await this._queued.next()
-		if( value.done){
+		const value= this._queued.shift()
+		if( this._queued.lenght=== 0){
 			this._queued= null
 			break QUEUED
 		}
@@ -74,6 +93,7 @@ AsyncIterMap.prototype.next= async function( passed){
 	}
 
 	// get next item
+	this._nexting= true
 	const next= await this.input.next()
 	if( next.done){
 		this._done()
@@ -118,9 +138,10 @@ AsyncIterMap.prototype.next= async function( passed){
 		if( !many){
 			await mapValue( solo)
 		}else{
-			// take each element in many , & map it into new many
+			// take each element in many, & map it into new many
 			const oldMany= many
-			many= []
+			many= undefined
+			solo= DropItem
 			const allMapped= oldMany.map( mapValue)
 			await Promise.all( allMapped)
 		}
@@ -137,12 +158,15 @@ AsyncIterMap.prototype.next= async function( passed){
 
 		// nothing left to yield try again
 		if( !many&& solo=== DropItem){
+			this._unnexting()
 			return this.next()
 		}
 	}
+	this._unnexting()
 
 	// store & yield
 	if( many){
+		// TODO: switch back to iterator
 		this._queued= !this._queued? many: [ ...this._queued, ...many]
 		return this.next()
 	}
@@ -197,9 +221,16 @@ AsyncIterMap.prototype.abort= function( err){
 }
 AsyncIterMap.prototype._done= function(){
 	this.done= true
+	this._unnexting()
 	if( this.cleanup!== false){
 		this.input= null
 	}
+}
+AsyncIterMap.prototype._unnexting= function(){
+	if( this._nexting&& this._nexting.resolve){
+		this._nexting.resolve()
+	}
+	this._nexting= false
 }
 
 export async function main( ...opts){
