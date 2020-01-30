@@ -53,6 +53,11 @@ export function AsyncIterMap({ cleanup, closeInput, count, input, map, signal}= 
 
 AsyncIterMap.prototype._maps= [ "map"]
 
+function notDrop( item){
+	return item!== DropItem
+}
+
+// HAZARD: calling .next() while another .next() is running is very race-y
 AsyncIterMap.prototype.next= async function( passed){
 	// process all flattened items first
 	QUEUED: if( this._queued){
@@ -61,6 +66,7 @@ AsyncIterMap.prototype.next= async function( passed){
 			this._queued= null
 			break QUEUED
 		}
+		++this.count
 		return {
 			value,
 			done: false
@@ -68,10 +74,8 @@ AsyncIterMap.prototype.next= async function( passed){
 	}
 
 	// get next item
-	// TODO: some of me wants to make input, if swapped, to hot-update this next
 	const next= await this.input.next()
 	if( next.done){
-		// no more input data
 		this._done()
 		return {
 			value: undefined,
@@ -79,50 +83,76 @@ AsyncIterMap.prototype.next= async function( passed){
 		}
 	}
 
-	// run maps
-	let value= next.value
-	for( let map of this._maps){
-		if( !( this[ map])){
+	let
+		mapName,
+		solo= next.value, // only a single known value
+		many= solo&& solo[ FlattenItem]&& [ ...solo] // multiple values
+	const mapValue= async v=> {
+		if( v=== DropItem){
+			return
+		}
+		let
+			mapped= await this[ mapName]( v, this.count, passed, Symbol),
+			gotMany= mapped&& mapped[ FlattenItem]
+		if( !many){ // presently only a solo value
+			if( gotMany){
+				many= mapped
+			}else{
+				solo= mapped
+			}
+		}else{
+			if( gotMany){
+				many.push( ...mapped)
+			}else{
+				many.push( mapped)
+			}
+		}
+	}
+	// run each map as a pass through all of previous pass
+	for( mapName of this._maps){
+		if( !( this[ mapName])){
 			continue
 		}
 
-		value= this[ map]( value, this.count, passed, Symbol)
-		// HAZARD: if someone calls .next() on us again, that .next() will likely resolve before this one if we drop
-		if( value=== DropItem){
-			// typically would await to give you your useful stack trace but yo maybe some day: tail-recursive
+		// run map
+		if( !many){
+			await mapValue( solo)
+		}else{
+			// take each element in many , & map it into new many
+			const oldMany= many
+			many= []
+			const allMapped= oldMany.map( mapValue)
+			await Promise.all( allMapped)
+		}
+
+		// shrink
+		if( many){
+			many= many.filter( notDrop)
+			// downgrade too
+			if( many.length< 2){
+				solo= many.length? many[ 0]: DropItem
+				many= undefined
+			}
+		}
+
+		// nothing left to yield try again
+		if( !many&& solo=== DropItem){
 			return this.next()
 		}
 	}
 
-	// flatten
-	if( value&& value[ FlattenItem]){
-		let
-			iter,
-			firstVal
-		if( map.value[ Symbol.asyncIterator]){
-			iter= map.value[ Symbol.asyncIterator]()
-			firstVal= await iter.next()
-		}else if( map.value[ Symbol.iterator]){
-			iter= map.value[ Symbol.iterator]()
-			firstVal= iter.next()
-		}
-		if( !iter){
-			throw new Error( "map was told to flatten a value but not iterable")
-		}
-		this._queued= iter
-		++this.count
-		return {
-			value: firstVal,
-			done: false
-		}
+	// store & yield
+	if( many){
+		this._queued= !this._queued? many: [ ...this._queued, ...many]
+		return this.next()
 	}
 
+	// return
 	++this.count
 	return {
-		value,
+		value: solo,
 		done: false
 	}
-	
 }
 export {
 	AsyncIterMap as default,
