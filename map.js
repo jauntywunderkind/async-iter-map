@@ -164,15 +164,23 @@ AsyncIterMap.prototype._unnexting= function(){
 	this._nexting= false
 }
 AsyncIterMap.prototype._unpack= async function*( value, passed, depth= 0){
+	const topDepth= depth=== 0
+	if( value=== DropItem){
+		if( topDepth){
+			this._queued= null
+		}
+		return
+	}
 	const
 		map= this._maps[ depth],
 		mapped= await this[ map]( value, this.count, passed, symbol)
 	if( mapped=== DropItem){
+		if( topDepth){
+			this._queued= null
+		}
 		return
 	}
-	const
-		startDepth= depth++,
-		last= depth>= this._maps.length
+	const last= ++depth>= this._maps.length
 	if( mapped&& mapped[ FlattenItem]){
 		for await( let item of mapped){
 			if( item=== DropItem){
@@ -183,7 +191,8 @@ AsyncIterMap.prototype._unpack= async function*( value, passed, depth= 0){
 			}
 		}
 	}else{
-		if( last){
+		if( mapped=== DropItem){
+		}else if( last){
 			yield mapped
 		}else{
 			yield *this._unpack( mapped, passed, depth)
@@ -191,9 +200,10 @@ AsyncIterMap.prototype._unpack= async function*( value, passed, depth= 0){
 	}
 
 	// clean ourselves up
-	this._queued= null
+	if( topDepth){
+		this._queued= null
+	}
 }
-
 
 export async function main( ...opts){
 	const
