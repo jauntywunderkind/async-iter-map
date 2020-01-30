@@ -13,7 +13,7 @@ export {
 	symbol as Symbol
 }
 
-export function AsyncIterMap({ input, map, count, signal }= {}){
+export function AsyncIterMap({ cleanup, closeInput, count, input, map, signal}= {}){
 	Object.defineProperties( this, {
 		abort: {
 			value: this.abort.bind( this),
@@ -23,6 +23,14 @@ export function AsyncIterMap({ input, map, count, signal }= {}){
 			value: (count!== undefined? count: this.count)|| 0,
 			writable: true
 		},
+		...( cleanup=== false&& { cleanup: {
+			value: false,
+			writable: true
+		}}),
+		...( closeInput=== false&& { closeInput: {
+			value: false,
+			writable: true
+		}}),
 		...( !this.input&&{ input: {
 			value: input,
 			writable: true
@@ -126,6 +134,9 @@ AsyncIterMap.prototype[ Symbol.asyncIterator]= function(){
 	return this
 }
 AsyncIterMap.prototype.return= function( value){
+	if( this.closeInput!== false&& this.input&& this.input.return){
+		this.input.return( value)
+	}
 	this._done()
 	return Promise.resolve({
 		done: true,
@@ -133,6 +144,9 @@ AsyncIterMap.prototype.return= function( value){
 	})
 }
 AsyncIterMap.prototype.throw= function( err){
+	if( this.closeInput!== false&& this.input&& this.input.throw){
+		this.input.throw( err)
+	}
 	this._done()
 	return Promise.reject( err)
 }
