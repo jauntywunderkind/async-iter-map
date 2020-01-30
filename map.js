@@ -51,6 +51,8 @@ export function AsyncIterMap({ cleanup, closeInput, count, input, map, signal}= 
 	return this
 }
 
+AsyncIterMap.prototype._maps= [ "map"]
+
 AsyncIterMap.prototype.next= async function( passed){
 	// process all flattened items first
 	QUEUED: if( this._queued){
@@ -77,18 +79,23 @@ AsyncIterMap.prototype.next= async function( passed){
 		}
 	}
 
-	// map data
-	const mapped= this.map( next.value, this.count, passed, Symbol)
+	// run maps
+	let value= next.value
+	for( let map of this._maps){
+		if( !( this[ map])){
+			continue
+		}
 
-	// drop?
-	// TODO: yo i heard you don't like recursive calls in non-tail-recursive langs but ohwell
-	if( mapped=== DropItem){
-		// typically would await to give you your useful stack trace but yo maybe some day: tail-recursive
-		return this.next()
+		value= this[ map]( value, this.count, passed, Symbol)
+		// HAZARD: if someone calls .next() on us again, that .next() will likely resolve before this one if we drop
+		if( value=== DropItem){
+			// typically would await to give you your useful stack trace but yo maybe some day: tail-recursive
+			return this.next()
+		}
 	}
 
 	// flatten
-	if( mapped&& mapped[ FlattenItem]){
+	if( value&& value[ FlattenItem]){
 		let
 			iter,
 			firstVal
@@ -112,7 +119,7 @@ AsyncIterMap.prototype.next= async function( passed){
 
 	++this.count
 	return {
-		value: mapped,
+		value,
 		done: false
 	}
 	
