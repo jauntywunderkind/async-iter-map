@@ -205,6 +205,19 @@ AsyncIterMap.prototype._unpack= async function*( value, passed, depth= 0){
 	}
 }
 
+export function Flatten( iterable){
+	let iter
+	if( iterable[ Symbol.asyncIterator]){
+		iter= iterable[ Symbol.asyncIterator]()
+	}else if( iterable[ Symbol.iterator]){
+		iter= iterable[ Symbol.iterator]()
+	}else{
+		throw new Error( "Not iterable")
+	}
+	iter[ FlattenItem]= true
+	return iter
+}
+
 export async function main( ...opts){
 	const
 		gets= (await import("voodoo-opt/opt.js")).gets,

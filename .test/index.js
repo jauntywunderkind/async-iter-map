@@ -1,4 +1,5 @@
 #!/usr/bin/env node
 import { } from "./map.js"
-import { } from "./depth.js"
+import { } from "./drop.js"
 import { } from "./extend.js"
+import { } from "./flatten.js"
