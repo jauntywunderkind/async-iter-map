@@ -24,6 +24,10 @@ export function AsyncIterMap({ cleanup, closeInput, count, input, map, signal}= 
 			value: (count!== undefined? count: this.count)|| 0,
 			writable: true
 		},
+		map: {
+			value: map|| this.map,
+			writable: true
+		},
 		...( cleanup=== false&& { cleanup: {
 			value: false,
 			writable: true
@@ -34,10 +38,6 @@ export function AsyncIterMap({ cleanup, closeInput, count, input, map, signal}= 
 		}}),
 		...( !this.input&&{ input: {
 			value: input,
-			writable: true
-		}}),
-		...( !this.map&&{ map: {
-			value: map,
 			writable: true
 		}}),
 		_nexting: {
@@ -171,32 +171,43 @@ AsyncIterMap.prototype._unpack= async function*( value, passed, depth= 0){
 		}
 		return
 	}
-	const
-		map= this._maps[ depth],
-		mapped= await this[ map]( value, this.count, passed, symbol)
-	if( mapped=== DropItem){
-		if( topDepth){
-			this._queued= null
-		}
-		return
+
+	// find next valid mapper
+	let mapper, last
+	while( !last&& !mapper){
+		const name= this._maps[ depth++]
+		mapper= this[ name]
+		last= depth>= this._maps.length
 	}
-	const last= ++depth>= this._maps.length
-	if( mapped&& mapped[ FlattenItem]){
-		for await( let item of mapped){
-			if( item=== DropItem){
+
+	if( mapper){
+		const mapped= await mapper.call( this, value, this.count, passed, symbol)
+		// mapper says no
+		if( mapped=== DropItem){
+			if( topDepth){
+				this._queued= null
+			}
+			return
+		}
+		if( mapped&& mapped[ FlattenItem]){
+			for await( let item of mapped){
+				if( item=== DropItem){
+				}else if( last){
+					yield item
+				}else{
+					yield *this._unpack( item, passed, depth)
+				}
+			}
+		}else{
+			if( mapped=== DropItem){
 			}else if( last){
-				yield item
+				yield mapped
 			}else{
-				yield *this._unpack( item, passed, depth)
+				yield *this._unpack( mapped, passed, depth)
 			}
 		}
 	}else{
-		if( mapped=== DropItem){
-		}else if( last){
-			yield mapped
-		}else{
-			yield *this._unpack( mapped, passed, depth)
-		}
+		yield value
 	}
 
 	// clean ourselves up
